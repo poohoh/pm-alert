@@ -1,3 +1,3 @@
-# fine-dust-alert
+# pm-alert
 
-Cloudflare Worker project for daily fine dust alerts.
+Cloudflare Worker project for daily PM alerts.
