@@ -7,7 +7,7 @@ export async function sendAlert(env: Env, result: CheckResult): Promise<void> {
 
   const baseUrl = stripTrailingSlash(env.NTFY_BASE_URL ?? "https://ntfy.sh");
   const url = `${baseUrl}/${encodeURIComponent(env.NTFY_TOPIC)}`;
-  const title = `${getAlertEmoji(result)} 오늘 ${result.measurement.stationName} 미세먼지`;
+  const title = `오늘 ${result.measurement.stationName} 미세먼지`;
   const body = createMessageBody(result);
 
   const response = await fetch(url, {
@@ -26,13 +26,33 @@ export async function sendAlert(env: Env, result: CheckResult): Promise<void> {
 
 function createMessageBody(result: CheckResult): string {
   return [
-    `미세먼지 ${toKoreanGrade(result.measurement.pm10Grade)}`,
-    `초미세먼지 ${toKoreanGrade(result.measurement.pm25Grade)}`
+    createMetricLine("미세먼지", result.measurement.pm10Grade, result.measurement.pm10Value, "pm10"),
+    createMetricLine("초미세먼지", result.measurement.pm25Grade, result.measurement.pm25Value, "pm25")
   ].join("\n");
 }
 
 function stripTrailingSlash(value: string): string {
   return value.replace(/\/+$/, "");
+}
+
+function displayMetric(value: number | null): string {
+  return value === null ? "N/A" : String(value);
+}
+
+function createMetricLine(
+  label: string,
+  grade: string | null,
+  value: number | null,
+  metricType: "pm10" | "pm25"
+): string {
+  const range = getGradeRange(metricType, grade);
+  const parts = [`${getGradeEmoji(grade)} ${label} ${toKoreanGrade(grade)} (${displayMetric(value)})`];
+
+  if (range) {
+    parts.push(`(${range})`);
+  }
+
+  return parts.join(" ");
 }
 
 function toKoreanGrade(grade: string | null): string {
@@ -50,21 +70,16 @@ function toKoreanGrade(grade: string | null): string {
   }
 }
 
-function getAlertEmoji(result: CheckResult): string {
-  const worstSeverity = Math.max(
-    getGradeSeverity(result.measurement.pm10Grade),
-    getGradeSeverity(result.measurement.pm25Grade)
-  );
-
-  switch (worstSeverity) {
+function getGradeEmoji(grade: string | null): string {
+  switch (getGradeSeverity(grade)) {
     case 1:
-      return "🌿";
+      return "🟢";
     case 2:
-      return "🙂";
+      return "🟡";
     case 3:
-      return "😷";
+      return "🔴";
     case 4:
-      return "🚨";
+      return "🚨🚨";
     default:
       return "❔";
   }
@@ -82,5 +97,35 @@ function getGradeSeverity(grade: string | null): number {
       return 4;
     default:
       return 0;
+  }
+}
+
+function getGradeRange(metricType: "pm10" | "pm25", grade: string | null): string | null {
+  if (metricType === "pm10") {
+    switch (grade) {
+      case "Good":
+        return "0 ~ 30";
+      case "Moderate":
+        return "31 ~ 80";
+      case "Bad":
+        return "81 ~ 150";
+      case "Very bad":
+        return "151+";
+      default:
+        return null;
+    }
+  }
+
+  switch (grade) {
+    case "Good":
+      return "0 ~ 15";
+    case "Moderate":
+      return "16 ~ 35";
+    case "Bad":
+      return "36 ~ 75";
+    case "Very bad":
+      return "76+";
+    default:
+      return null;
   }
 }
