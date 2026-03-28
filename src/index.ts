@@ -64,7 +64,7 @@ async function runCheck(env: Env, sendNotification: boolean): Promise<CheckResul
   const exceeded = findExceededMetrics(measurement, thresholds);
   const shouldNotify = exceeded.length > 0;
 
-  if (sendNotification && shouldNotify) {
+  if (sendNotification) {
     await sendAlert(env, {
       checkedAt: formatTimestamp(new Date()),
       exceeded,
@@ -79,7 +79,7 @@ async function runCheck(env: Env, sendNotification: boolean): Promise<CheckResul
     checkedAt: formatTimestamp(new Date()),
     exceeded,
     measurement,
-    notificationSent: sendNotification && shouldNotify,
+    notificationSent: sendNotification,
     shouldNotify,
     thresholds
   };

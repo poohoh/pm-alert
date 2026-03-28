@@ -5,7 +5,7 @@ Cloudflare Worker project for daily PM alerts from AirKorea, with ntfy push noti
 ## What it does
 
 - Pulls the latest PM10 and PM2.5 reading for a single AirKorea station
-- Sends an ntfy notification when either metric crosses your threshold
+- Sends a daily ntfy summary notification with PM10 and PM2.5 grades
 - Runs automatically on a Cloudflare Cron schedule
 - Exposes a simple dashboard at `/` and live JSON at `/api/status`
 
@@ -39,7 +39,7 @@ Cloudflare Worker project for daily PM alerts from AirKorea, with ntfy push noti
 
 - `GET /` renders a dashboard without sending notifications
 - `GET /api/status` returns the live check result as JSON
-- `POST /api/run` triggers a manual run and sends a notification if thresholds are exceeded
+- `GET` or `POST /api/run` triggers a manual run and sends the daily summary notification
 
 If `ADMIN_TOKEN` is set, `/api/run` requires either:
 
@@ -73,4 +73,5 @@ npm run deploy
 
 - `AIRKOREA_SERVICE_KEY` supports either the encoded key or the decoding key.
 - `NTFY_TOPIC` should be hard to guess because anyone with the same topic can subscribe to it on the public `ntfy.sh` server.
-- Refreshing the dashboard never sends an alert. Only `/api/run` and the scheduled job can notify.
+- Refreshing the dashboard never sends a notification. Only `/api/run` and the scheduled job can notify.
+- The notification body is a two-line summary such as `미세먼지 보통` and `초미세먼지 나쁨`.

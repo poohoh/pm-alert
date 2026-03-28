@@ -7,14 +7,13 @@ export async function sendAlert(env: Env, result: CheckResult): Promise<void> {
 
   const baseUrl = stripTrailingSlash(env.NTFY_BASE_URL ?? "https://ntfy.sh");
   const url = `${baseUrl}/${encodeURIComponent(env.NTFY_TOPIC)}`;
-  const title = `PM alert: ${result.measurement.stationName}`;
+  const title = `${getAlertEmoji(result)} 오늘 ${result.measurement.stationName} 미세먼지`;
   const body = createMessageBody(result);
 
   const response = await fetch(url, {
     body,
     headers: {
-      Priority: result.exceeded.length > 1 ? "urgent" : "high",
-      Tags: "warning,mask,wind_face",
+      Priority: result.exceeded.length > 0 ? "high" : "default",
       Title: title
     },
     method: "POST"
@@ -26,30 +25,62 @@ export async function sendAlert(env: Env, result: CheckResult): Promise<void> {
 }
 
 function createMessageBody(result: CheckResult): string {
-  const lines = [
-    `${result.measurement.stationName} air quality is above your alert threshold.`,
-    "",
-    `Measured at: ${result.measurement.dataTime || "unknown"}`,
-    `PM2.5: ${displayMetric(result.measurement.pm25Value)} (alert at ${result.thresholds.pm25})`,
-    `PM10: ${displayMetric(result.measurement.pm10Value)} (alert at ${result.thresholds.pm10})`
-  ];
-
-  if (result.measurement.khaiValue !== null) {
-    lines.push(`CAI: ${result.measurement.khaiValue}`);
-  }
-
-  if (result.exceeded.length > 0) {
-    lines.push("", `Exceeded: ${result.exceeded.map((item) => item.label).join(", ")}`);
-  }
-
-  lines.push("", "Consider a mask before heading out.");
-  return lines.join("\n");
-}
-
-function displayMetric(value: number | null): string {
-  return value === null ? "N/A" : String(value);
+  return [
+    `미세먼지 ${toKoreanGrade(result.measurement.pm10Grade)}`,
+    `초미세먼지 ${toKoreanGrade(result.measurement.pm25Grade)}`
+  ].join("\n");
 }
 
 function stripTrailingSlash(value: string): string {
   return value.replace(/\/+$/, "");
+}
+
+function toKoreanGrade(grade: string | null): string {
+  switch (grade) {
+    case "Good":
+      return "좋음";
+    case "Moderate":
+      return "보통";
+    case "Bad":
+      return "나쁨";
+    case "Very bad":
+      return "매우 나쁨";
+    default:
+      return "정보 없음";
+  }
+}
+
+function getAlertEmoji(result: CheckResult): string {
+  const worstSeverity = Math.max(
+    getGradeSeverity(result.measurement.pm10Grade),
+    getGradeSeverity(result.measurement.pm25Grade)
+  );
+
+  switch (worstSeverity) {
+    case 1:
+      return "🌿";
+    case 2:
+      return "🙂";
+    case 3:
+      return "😷";
+    case 4:
+      return "🚨";
+    default:
+      return "❔";
+  }
+}
+
+function getGradeSeverity(grade: string | null): number {
+  switch (grade) {
+    case "Good":
+      return 1;
+    case "Moderate":
+      return 2;
+    case "Bad":
+      return 3;
+    case "Very bad":
+      return 4;
+    default:
+      return 0;
+  }
 }
