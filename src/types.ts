@@ -24,6 +24,18 @@ export interface Measurement {
   stationName: string;
 }
 
+export interface HistoryPoint {
+  dataTime: string;
+  pm10Value: number | null;
+  pm25Value: number | null;
+  timeLabel: string;
+}
+
+export interface AirQualitySnapshot {
+  history: HistoryPoint[];
+  measurement: Measurement;
+}
+
 export interface ExceededMetric {
   label: "PM10" | "PM2.5";
   threshold: number;
@@ -33,6 +45,7 @@ export interface ExceededMetric {
 export interface CheckResult {
   checkedAt: string;
   exceeded: ExceededMetric[];
+  history: HistoryPoint[];
   measurement: Measurement;
   notificationSent: boolean;
   shouldNotify: boolean;

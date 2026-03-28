@@ -1,4 +1,4 @@
-import { fetchLatestMeasurement } from "./airkorea";
+import { fetchAirQualitySnapshot } from "./airkorea";
 import { sendAlert } from "./notify";
 import type { CheckResult, Env, ExceededMetric, Thresholds } from "./types";
 import { renderDashboard, renderErrorDashboard } from "./web";
@@ -60,29 +60,25 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 
 async function runCheck(env: Env, sendNotification: boolean): Promise<CheckResult> {
   const thresholds = getThresholds(env);
-  const measurement = await fetchLatestMeasurement(env);
+  const snapshot = await fetchAirQualitySnapshot(env);
+  const measurement = snapshot.measurement;
   const exceeded = findExceededMetrics(measurement, thresholds);
   const shouldNotify = exceeded.length > 0;
-
-  if (sendNotification) {
-    await sendAlert(env, {
-      checkedAt: formatTimestamp(new Date()),
-      exceeded,
-      measurement,
-      notificationSent: false,
-      shouldNotify,
-      thresholds
-    });
-  }
-
-  return {
+  const result = {
     checkedAt: formatTimestamp(new Date()),
     exceeded,
+    history: snapshot.history,
     measurement,
     notificationSent: sendNotification,
     shouldNotify,
     thresholds
   };
+
+  if (sendNotification) {
+    await sendAlert(env, result);
+  }
+
+  return result;
 }
 
 function findExceededMetrics(

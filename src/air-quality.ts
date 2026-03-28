@@ -1,5 +1,14 @@
 export type MetricType = "pm10" | "pm25";
 
+const GRADE_ORDER = ["Good", "Moderate", "Bad", "Very bad"] as const;
+
+export interface GradeCriteriaRow {
+  emoji: string;
+  label: string;
+  pm10Range: string;
+  pm25Range: string;
+}
+
 export function toKoreanGrade(grade: string | null): string {
   switch (grade) {
     case "Good":
@@ -73,4 +82,13 @@ export function getGradeRange(metricType: MetricType, grade: string | null): str
     default:
       return null;
   }
+}
+
+export function getGradeCriteriaRows(): GradeCriteriaRow[] {
+  return GRADE_ORDER.map((grade) => ({
+    emoji: getGradeEmoji(grade),
+    label: toKoreanGrade(grade),
+    pm10Range: getGradeRange("pm10", grade) ?? "-",
+    pm25Range: getGradeRange("pm25", grade) ?? "-"
+  }));
 }
